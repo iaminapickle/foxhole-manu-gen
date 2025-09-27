@@ -5,7 +5,7 @@ use std::collections::VecDeque;
 
 use nalgebra::{Dyn, Matrix, VecStorage, U1};
 
-use crate::{check_is_valid, CostVec, NoMaterials, QueueVec, NO_MATERIALS};
+use crate::{optimality_metric::OptimalityMetric, CostVec, NoMaterials, QueueVec, NO_MATERIALS};
 
 pub trait Category {
     fn size(&self) -> u8;
@@ -38,7 +38,7 @@ pub trait Category {
                         let m = Matrix::from_row_slice_generic(U1, Dyn(self.size().into()), &v);
                         return (m.clone(), m * self.cost_matrix());
                     })
-                    .filter(|(_, c)| check_is_valid(*c))
+                    .filter(|(_, c)| OptimalityMetric::Affordable.check_metric(*c))
                     .collect();
     }
 }
