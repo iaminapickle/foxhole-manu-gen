@@ -1,8 +1,10 @@
 mod category;
+mod material;
+mod optimality_metric;
 
 use std::{collections::HashMap, fs::File, time::Instant, fmt::Write as fmtWrite, io::Write as ioWrite};
 
-use crate::category::{material_grouped_warden_category::MaterialGroupedWardenCategory, warden_category::WardenCategory, Category};
+use crate::{category::{material_grouped_warden_category::MaterialGroupedWardenCategory, warden_category::WardenCategory, Category}, optimality_metric::{OptimalityMetric, PerfectMetric}};
 use nalgebra::{ArrayStorage, Dyn, Matrix, VecStorage, U1, U4, U7};
 use strum::IntoEnumIterator;
 
@@ -17,21 +19,6 @@ type NoMaterials = U4;
 const NO_MATERIALS: usize = 4;
 
 const TRUCK_SIZE: usize = 15;
-
-pub fn check_is_valid(cost_vector: CostVec) -> bool {
-    return cost_vector.iter()
-                      .map(|x| (x + 99) / 100)
-                      .sum::<u16>() <= 15;
-}
-
-pub fn check_is_stackable(cost_vector: CostVec) -> bool {
-    return cost_vector.iter().all(|x| x % 100 == 0);
-}
-
-pub fn check_is_perfectly_stackable(cost_vector: CostVec, n: u16) -> bool {
-    return check_is_stackable(cost_vector) && 
-           cost_vector.iter().map(|x| x / 100).collect::<Vec<u16>>().iter().sum::<u16>() == n;
-}
 
 pub fn format_cost_vector(cost_vector: CostVec) -> String {
     let mut res: String = String::from("[");
@@ -76,7 +63,7 @@ pub fn format_batch(batch: Batch) -> String {
     return res;
 }
 
-pub fn find_all_batches_perfectly_stackable_to_n(n: u16) {
+pub fn find_all_batches_with_metric(metric: PerfectMetric) {
     let mut base_queues: HashMap<MaterialGroupedWardenCategory, Vec<(QueueVec, CostVec)>> = HashMap::new();
     for c in MaterialGroupedWardenCategory::iter() {
         base_queues.insert(c.clone(), c.generate_valid_queue_vecs());
@@ -89,12 +76,12 @@ pub fn find_all_batches_perfectly_stackable_to_n(n: u16) {
         stack.push((vec![q], c));
     }
 
-    let path = format!("all_perfectly_stackable_to_{}.txt", n.to_string());
+    let path = format!("all_batches_with_{}.txt", metric.to_string());
     let mut output = File::create(path).unwrap();
     while !stack.is_empty() {
         let cur: (Batch, CostVec) = stack.pop().unwrap();
         if cur.0.len() == NO_CATEGORIES {
-            if check_is_perfectly_stackable(cur.1, n) {
+            if metric.check_metric(cur.1) {
                 let _ = write!(output, "Batch: {}\nCost: {}\n", format_batch(cur.0), format_cost_vector(cur.1));
             }
             continue;
@@ -102,7 +89,7 @@ pub fn find_all_batches_perfectly_stackable_to_n(n: u16) {
 
         let next = order[cur.0.len()].clone();
         for (q,c) in base_queues[&next].clone() {
-            if check_is_valid(cur.1 + c) {
+            if OptimalityMetric::Affordable.check_metric(cur.1 + c) {
                 let mut tmp = cur.0.clone();
                 tmp.push(q);
                 stack.push((tmp, cur.1 + c));
@@ -113,6 +100,6 @@ pub fn find_all_batches_perfectly_stackable_to_n(n: u16) {
 
 fn main() {
     let now = Instant::now();
-    find_all_batches_perfectly_stackable_to_n(TRUCK_SIZE.try_into().unwrap());
+    find_all_batches_with_metric(PerfectMetric::PerfectlyStackable(TRUCK_SIZE.try_into().unwrap()));
     println!("Elapsed: {:.2?}", now.elapsed());
 }
