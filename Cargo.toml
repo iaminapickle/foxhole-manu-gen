@@ -9,3 +9,8 @@ strum = "0.27.2"
 strum_macros = "0.27"
 libmath = "0.2.1"
 bit-vec = "0.8"
+rayon = "1.11.0"
+
+[profile.profiling]
+inherits = "release"
+debug = true

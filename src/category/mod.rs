@@ -4,8 +4,9 @@ pub mod material_grouped_warden_category;
 use std::collections::VecDeque;
 
 use nalgebra::{Dyn, Matrix, VecStorage, U1};
+use strum::IntoEnumIterator;
 
-use crate::{cost_metric::CostMetric, CostVec, NoMaterials, QueueVec, NO_MATERIALS};
+use crate::{cost_metric::CostMetric, material::Material, CostVec, NoMaterials, QueueVec, NO_MATERIALS};
 
 pub trait Category {
     fn size(&self) -> u8;
@@ -33,12 +34,13 @@ pub trait Category {
             }
         }
 
+        let material_order: Vec<Material> = Material::iter().collect();
         return queue.iter()
                     .map(|v| {
                         let m = Matrix::from_row_slice_generic(U1, Dyn(self.size().into()), &v);
                         return (m.clone(), m * self.cost_matrix());
                     })
-                    .filter(|(_, c)| CostMetric::Affordable.check_metric(*c))
+                    .filter(|(_, c)| CostMetric::Affordable.check_metric(*c, &material_order))
                     .collect();
     }
 }

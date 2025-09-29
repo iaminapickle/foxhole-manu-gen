@@ -2,9 +2,10 @@ mod category;
 mod material;
 mod cost_metric;
 
-use std::{collections::HashMap, fs::File, time::Instant, fmt::Write as fmtWrite, io::Write as ioWrite};
+use std::{collections::HashMap, fmt::Write as fmtWrite, fs::File, io::Write as ioWrite, time::Instant};
 
-use crate::{category::{material_grouped_warden_category::MaterialGroupedWardenCategory, warden_category::WardenCategory, Category}, cost_metric::CostMetric};
+use crate::{category::{material_grouped_warden_category::MaterialGroupedWardenCategory, warden_category::WardenCategory, Category}, cost_metric::CostMetric, material::Material};
+use rayon::prelude::*;
 use bit_vec::BitVec;
 use nalgebra::{ArrayStorage, Dyn, Matrix, VecStorage, U1, U4, U7};
 use strum::IntoEnumIterator;
@@ -72,7 +73,8 @@ pub fn find_n_batches_with_metrics(n: u8, metrics: Vec<CostMetric>) {
     }
     
     let order: Vec<MaterialGroupedWardenCategory> = MaterialGroupedWardenCategory::iter().collect();
-    
+    let material_order: Vec<Material> = Material::iter().collect();
+
     let mut stack: Vec<(Batch, CostVec)> = Vec::new();
     for (q, c) in base_queues[order.first().unwrap()].clone() {
         stack.push((vec![q], c));
@@ -83,18 +85,19 @@ pub fn find_n_batches_with_metrics(n: u8, metrics: Vec<CostMetric>) {
     while !stack.is_empty() {
         let cur: (Batch, CostVec) = stack.pop().unwrap();
         if cur.0.len() == n.into() {
-            if metrics.iter().all(|m| m.check_metric(cur.1)) {
+            if metrics.iter().all(|m| m.check_metric(cur.1, &material_order)) {
                 let _ = write!(output, "Batch: {}\nCost: {}\n", format_batch(cur.0), format_cost_vector(cur.1));
             }
             continue;
         }
 
-        let next = order[cur.0.len()].clone();
+        let next = order[cur.0.len()];
         for (q,c) in base_queues[&next].clone() {
-            if CostMetric::Affordable.check_metric(cur.1 + c) {
+            let new_cost = cur.1 + c;
+            if CostMetric::Affordable.check_metric(new_cost, &material_order) {
                 let mut tmp = cur.0.clone();
                 tmp.push(q);
-                stack.push((tmp, cur.1 + c));
+                stack.push((tmp, new_cost));
             }
         }
     }
@@ -107,10 +110,12 @@ pub fn find_all_batches_with_metrics(metrics: Vec<CostMetric>) {
 fn main() {
     let now = Instant::now();
     let metrics: Vec<CostMetric> = Vec::from([
-        CostMetric::PerfectlyCrateable(TRUCK_SIZE.try_into().unwrap()),
-        // CostMetric::PerfectlyStackable(TRUCK_SIZE.try_into().unwrap())
+        // CostMetric::PerfectlyCrateable(TRUCK_SIZE.try_into().unwrap()),
+        CostMetric::PerfectlyStackable(TRUCK_SIZE.try_into().unwrap())
     ]);
     find_n_batches_with_metrics(2, metrics);
+    // find_all_batches_with_metrics(metrics);
+
     println!("Elapsed: {:.2?}", now.elapsed());
 }
 

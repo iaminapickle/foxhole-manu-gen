@@ -1,6 +1,7 @@
 use std::fmt;
 
 use crate::{CostVec, material::Material};
+use rayon::prelude::*;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -15,28 +16,27 @@ pub enum CostMetric {
 }
 
 impl CostMetric {
-    pub fn check_metric(&self, cv: CostVec) -> bool {
-        let material_order: Vec<Material> = Material::iter().collect();
+    pub fn check_metric(&self, cv: CostVec, order: &Vec<Material>) -> bool {
         return match self {
             Self::Affordable => { 
-                cv.iter().enumerate().map(|(idx, x)| x.div_ceil(material_order[idx].stack_value())).sum::<u16>() <= 15 
+                cv.iter().enumerate().map(|(idx, x)| x.div_ceil(order[idx].stack_value())).sum::<u16>() <= 15 
             },
             Self::NValid(n) => {
-                cv.iter().enumerate().map(|(idx, x)| x.div_ceil(material_order[idx].stack_value())).sum::<u16>() == *n
+                cv.iter().enumerate().map(|(idx, x)| x.div_ceil(order[idx].stack_value())).sum::<u16>() == *n
             }, 
             Self::Stackable => {
-                cv.iter().enumerate().all(|(idx, x)| x % material_order[idx].stack_value() == 0)
+                cv.iter().enumerate().all(|(idx, x)| x % order[idx].stack_value() == 0)
             },
             Self::Crateable => {
-                cv.iter().enumerate().all(|(idx, x)| x % material_order[idx].crate_value() == 0)
+                cv.iter().enumerate().all(|(idx, x)| x % order[idx].crate_value() == 0)
             },
             Self::PerfectlyStackable(n) => {
-                Self::Stackable.check_metric(cv) && 
-                Self::NValid(*n).check_metric(cv)
+                Self::Stackable.check_metric(cv, order) && 
+                Self::NValid(*n).check_metric(cv, order)
             },
             Self::PerfectlyCrateable(n) => {
-                Self::Crateable.check_metric(cv) && 
-                Self::NValid(*n).check_metric(cv)
+                Self::Crateable.check_metric(cv, order) && 
+                Self::NValid(*n).check_metric(cv, order)
             }
         }
     }
