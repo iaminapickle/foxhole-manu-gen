@@ -5,14 +5,12 @@ mod cost_metric;
 use std::{collections::HashMap, fmt::Write as fmtWrite, fs::File, io::Write as ioWrite, time::Instant};
 
 use crate::{category::{material_grouped_warden_category::MaterialGroupedWardenCategory, warden_category::WardenCategory, Category}, cost_metric::CostMetric, material::Material};
-use bit_vec::BitVec;
-use nalgebra::{base, ArrayStorage, DVector, Dyn, Matrix, RowDVector, RowSVector, SVector, VecStorage, U1, U4, U7};
+use nalgebra::{RowDVector, RowSVector, U4, U7};
 use strum::IntoEnumIterator;
 use lazy_static::lazy_static;
 
 type CostVec = RowSVector<u16, NO_MATERIALS>;
 type QueueVec = RowDVector<u16>;
-type QueueGroup = (Vec<QueueVec>, BitVec);
 type Batch = Vec<QueueVec>;
 
 type NoCategories = U7;
@@ -118,47 +116,7 @@ fn main() {
         // CostMetric::PerfectlyCrateable(TRUCK_SIZE_u16),
         CostMetric::PerfectlyStackable(TRUCK_SIZE_U16)
     ]);
-    find_n_batches_with_metrics(2, metrics);
-    // find_all_batches_with_metrics(metrics);
+    // find_n_batches_with_metrics(2, metrics);
+    find_all_batches_with_metrics(metrics);
     println!("Elapsed: {:.2?}", now.elapsed());
 }
-
-// pub fn find_n_groups_with_metrics(n: u8, metrics: Vec<CostMetric>) {
-//     let mut base_queues: HashMap<MaterialGroupedWardenCategory, Vec<(QueueVec, CostVec)>> = HashMap::new();
-//     for c in MaterialGroupedWardenCategory::iter() {
-//         base_queues.insert(c.clone(), c.generate_valid_queue_vecs());
-//     }
-    
-//     let order: Vec<MaterialGroupedWardenCategory> = MaterialGroupedWardenCategory::iter().collect();
-    
-//     let mut stack: Vec<(QueueGroup, CostVec)> = Vec::new();
-//     for i in 0..NO_CATEGORIES {
-//         let queues = base_queues[&order[i]];
-//         let bv = BitVec::from_elem(NO_CATEGORIES, false);
-//         bv[i] = true;
-//         for (q, c) in queues {
-//             stack.push(((vec![q], bv), c))
-//         }
-//     }
-
-//     let path = format!("all_batches_with_{:?}.txt", metrics);
-//     let mut output = File::create(path).unwrap();
-//     while !stack.is_empty() {
-//         let cur: (Batch, CostVec) = stack.pop().unwrap();
-//         if cur.0.len() == NO_CATEGORIES {
-//             if metrics.iter().all(|m| m.check_metric(cur.1)) {
-//                 let _ = write!(output, "Batch: {}\nCost: {}\n", format_batch(cur.0), format_cost_vector(cur.1));
-//             }
-//             continue;
-//         }
-
-//         let next = order[cur.0.len()].clone();
-//         for (q,c) in base_queues[&next].clone() {
-//             if CostMetric::Affordable.check_metric(cur.1 + c) {
-//                 let mut tmp = cur.0.clone();
-//                 tmp.push(q);
-//                 stack.push((tmp, cur.1 + c));
-//             }
-//         }
-//     }
-// }
