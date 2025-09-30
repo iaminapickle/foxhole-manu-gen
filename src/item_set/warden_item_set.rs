@@ -1,12 +1,12 @@
 use std::fmt;
 
 use crate::{NoMaterials, NO_MATERIALS};
-use crate::category::Category;
-use strum_macros::EnumIter;
+use crate::item_set::ItemSet;
 use nalgebra::{Const, Dyn, Matrix, VecStorage};
+use strum_macros::EnumIter;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, EnumIter)]
-pub enum WardenCategory {
+pub enum WardenItemSet{
     SmallArms,
     HeavyArms,
     HeavyAmmunition,
@@ -16,7 +16,7 @@ pub enum WardenCategory {
     Uniforms
 }
 
-impl Category for WardenCategory {
+impl ItemSet for WardenItemSet {
     fn size(&self) -> u8 {
         return match self {
             Self::SmallArms => 25,
@@ -262,7 +262,7 @@ impl Category for WardenCategory {
     }
 }
 
-impl fmt::Display for WardenCategory {
+impl fmt::Display for WardenItemSet {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
