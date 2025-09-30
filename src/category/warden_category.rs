@@ -5,7 +5,7 @@ use crate::category::Category;
 use strum_macros::EnumIter;
 use nalgebra::{Const, Dyn, Matrix, VecStorage};
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, EnumIter)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, EnumIter)]
 pub enum WardenCategory {
     SmallArms,
     HeavyArms,
