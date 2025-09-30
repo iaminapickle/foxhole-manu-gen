@@ -3,9 +3,10 @@ pub mod material_grouped_warden_category;
 
 use std::collections::VecDeque;
 
-use nalgebra::{Dyn, Matrix, VecStorage, U1};
+use nalgebra::{DVector, Dyn, Matrix, RowDVector, VecStorage, U1};
+use strum::IntoEnumIterator;
 
-use crate::{optimality_metric::OptimalityMetric, CostVec, NoMaterials, QueueVec, NO_MATERIALS};
+use crate::{cost_metric::CostMetric, material::Material, CostVec, NoMaterials, QueueVec, MAX_ORDER};
 
 pub trait Category {
     fn size(&self) -> u8;
@@ -14,16 +15,14 @@ pub trait Category {
 
     fn generate_valid_queue_vecs(&self) -> Vec<(QueueVec, CostVec)> {
         let mut queue = VecDeque::new();
-        
         queue.push_back(vec![]);
         
         while let Some(current) = queue.pop_front() {  
             let sum: u16 = current.iter().sum();
-            for n in 0..=NO_MATERIALS {
-                let tmp: u16 = n.try_into().unwrap();
-                if sum + tmp <= 4 {
+            for n in 0..=MAX_ORDER {
+                if usize::from(sum) + n <= MAX_ORDER {
                     let mut next: Vec<u16> = current.clone();
-                    next.push(tmp);
+                    next.push(n.try_into().unwrap());
                     queue.push_back(next);
                 }
             }
@@ -35,10 +34,10 @@ pub trait Category {
 
         return queue.iter()
                     .map(|v| {
-                        let m = Matrix::from_row_slice_generic(U1, Dyn(self.size().into()), &v);
-                        return (m.clone(), m * self.cost_matrix());
+                        let r = RowDVector::from_row_slice_generic(U1, Dyn(self.size().into()), &v);
+                        return (r.clone(), r * self.cost_matrix());
                     })
-                    .filter(|(_, c)| OptimalityMetric::Affordable.check_metric(*c))
+                    .filter(|(_, c)| CostMetric::Affordable.check_metric(c))
                     .collect();
     }
 }
