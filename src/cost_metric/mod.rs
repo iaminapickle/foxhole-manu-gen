@@ -1,12 +1,7 @@
 use std::fmt;
 
-use crate::{material::Material, CostVec, TRUCK_SIZE_U16, MATERIAL_ORDER};
-use strum::IntoEnumIterator;
+use crate::{CostVec, TRUCK_SIZE_U16, MATERIAL_ORDER};
 use strum_macros::EnumIter;
-
-pub fn no_slots(cv: &CostVec) -> u16 {
-    return cv.iter().enumerate().map(|(idx, x)| x.div_ceil(MATERIAL_ORDER[idx].stack_value())).sum::<u16>();
-}
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, EnumIter)]
 pub enum CostMetric {
