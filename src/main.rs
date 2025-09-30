@@ -1,10 +1,12 @@
-mod category;
+mod item_set;
 mod material;
 mod cost_metric;
+mod helper;
 
-use std::{fmt::Write as fmtWrite, fs::File, io::Write as ioWrite, time::Instant};
+use std::{fs::File, io::Write, time::Instant};
 
-use crate::{category::{material_grouped_warden_category::MaterialGroupedWardenCategory, warden_category::WardenCategory, Category}, cost_metric::CostMetric, material::Material};
+use crate::{cost_metric::CostMetric, helper::{format_batch_long, format_batch_short, format_cost_vector}, item_set::{material_grouped_warden_item_set::MaterialGroupedWardenItemSet, output_legend_file, warden_item_set::WardenItemSet, ItemSet}, material::Material};
+use clap::Parser;
 use nalgebra::{RowDVector, RowSVector, U4, U7};
 use strum::IntoEnumIterator;
 use lazy_static::lazy_static;
@@ -25,57 +27,19 @@ const MAX_ORDER: usize = 4;
 
 lazy_static! {
     static ref MATERIAL_ORDER: Vec<Material> = Material::iter().collect();
+    static ref args: Cli = Cli::parse();
 }
 
-pub fn format_cost_vector(cost_vector: CostVec) -> String {
-    let mut res: String = String::from("[");
-    for n in &cost_vector {
-        let _ = write!(res, "{}, ", n);
-    }
-    res.pop();
-    res.pop();
-    let _ = write!(res, "]");
-    return res;
+#[derive(Parser, Debug)]
+struct Cli {
+    #[arg(short, long, default_value_t = false)]
+    output: bool,
+    #[arg(long, default_value_t = false)]
+    output_batch_long: bool,
 }
 
-pub fn format_batch<C>(batch: Batch) -> String where 
-    C: Category + IntoEnumIterator + ToString
-{
-    let mut res: String = String::new();
-    let category_order: Vec<C> = C::iter().collect();
-
-    for c in 0..batch.len() {
-        let category = &category_order[c];
-        let names = category.item_order();
-        
-        let queue = &batch[c];
-        if queue.iter().all(|x| *x == 0) { continue; }
-
-        let _ = write!(res, "{}(", &category.to_string());
-        
-        for i in 0..queue.len() {
-            if queue[i] != 0 {
-                let _ = write!(res, "{} x [", &queue[i].to_string());
-
-                for n in &names[i] {
-                    let _ = write!(res, "{}, ", n);
-                }
-                res.pop();
-                res.pop();
-                let _ = write!(res, "], ");
-            }
-        }
-        res.pop();
-        res.pop();
-        let _ = write!(res, ") ");
-    }
-    return res;
-}
-
-pub fn find_n_batches_with_metrics<C>(n: usize, metrics: Vec<CostMetric>) where
-    C: Category + IntoEnumIterator + ToString,
-{
-    let category_order: Vec<C> = C::iter().collect();
+pub fn find_n_batches_with_metrics<S: ItemSet>(n: usize, metrics: Vec<CostMetric>) where {   
+    let category_order: Vec<S> = S::iter().collect();
     let base_queues: Vec<Vec<(QueueVec, CostVec)>> = category_order.iter().map(|c|  c.generate_valid_queue_vecs()).collect();
 
     let mut stack: Vec<(Batch, CostVec)> = Vec::new();
@@ -83,13 +47,18 @@ pub fn find_n_batches_with_metrics<C>(n: usize, metrics: Vec<CostMetric>) where
         stack.push((vec![q], c));
     }
 
-    let path = format!("{n}_batches_with_{:?}.txt", metrics);
-    let mut output = File::create(path).unwrap();
+    let output_suffix = if args.output_batch_long { String::from("long") } else { String::from("short")};
+    let path = format!("{n}_batches_with_{:?}_{}.txt", metrics, output_suffix);
+    let mut output = if args.output { Some(File::create(path).unwrap()) } else { None };
+    if args.output && !args.output_batch_long { output_legend_file::<MaterialGroupedWardenItemSet>(); }
+
     while !stack.is_empty() {
         let cur: (Batch, CostVec) = stack.pop().unwrap();
         if cur.0.len() == n {
-            if metrics.iter().all(|m| m.check_metric(&cur.1)) {
-                let _ = write!(output, "Batch: {}\nCost: {}\n", format_batch::<C>(cur.0), format_cost_vector(cur.1));
+            if metrics.iter().all(|m| m.check_metric(&cur.1)) &&
+               let Some(ref mut f) = output {
+                let batch_string = if args.output_batch_long { format_batch_long::<S>(cur.0) } else { format_batch_short::<S>(cur.0) };
+                let _ = write!(f, "Batch: {}\nCost: {}\n", batch_string, format_cost_vector(cur.1));
             }
             continue;
         }
@@ -105,19 +74,17 @@ pub fn find_n_batches_with_metrics<C>(n: usize, metrics: Vec<CostMetric>) where
     }
 }
 
-pub fn find_all_batches_with_metrics<C>(metrics: Vec<CostMetric>) where
-    C: Category + IntoEnumIterator + ToString
-{
-    find_n_batches_with_metrics::<C>(NO_CATEGORIES.try_into().unwrap(), metrics);
+pub fn find_all_batches_with_metrics<S: ItemSet>(metrics: Vec<CostMetric>) {
+    find_n_batches_with_metrics::<S>(NO_CATEGORIES.try_into().unwrap(), metrics);
 }
 
 fn main() {
-    let now = Instant::now();
     let metrics: Vec<CostMetric> = Vec::from([
         // CostMetric::PerfectlyCrateable(TRUCK_SIZE_u16),
         CostMetric::PerfectlyStackable(TRUCK_SIZE_U16)
-    ]);
-    find_n_batches_with_metrics::<MaterialGroupedWardenCategory>(2, metrics);
+        ]);
+    let now = Instant::now();
+    find_n_batches_with_metrics::<MaterialGroupedWardenItemSet>(2, metrics);
     // find_all_batches_with_metrics::<MaterialGroupedWardenCategory>(metrics);
     println!("Elapsed: {:.2?}", now.elapsed());
 }

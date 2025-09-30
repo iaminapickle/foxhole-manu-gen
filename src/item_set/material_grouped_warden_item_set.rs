@@ -1,12 +1,12 @@
 use std::fmt;
 
 use crate::{NoMaterials, NO_MATERIALS};
-use crate::category::Category;
-use strum_macros::EnumIter;
+use crate::item_set::ItemSet;
 use nalgebra::{Const, Dyn, Matrix, VecStorage};
+use strum_macros::EnumIter;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, EnumIter)]
-pub enum MaterialGroupedWardenCategory {
+pub enum MaterialGroupedWardenItemSet {
     SmallArms,
     HeavyArms,
     HeavyAmmunition,
@@ -16,7 +16,7 @@ pub enum MaterialGroupedWardenCategory {
     Uniforms
 }
 
-impl Category for MaterialGroupedWardenCategory {
+impl ItemSet for MaterialGroupedWardenItemSet {
     fn size(&self) -> u8 {
         return match self {
             Self::SmallArms => 13,
@@ -228,7 +228,7 @@ impl Category for MaterialGroupedWardenCategory {
     }
 }
 
-impl fmt::Display for MaterialGroupedWardenCategory {
+impl fmt::Display for MaterialGroupedWardenItemSet {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
