@@ -3,10 +3,9 @@ pub mod material_grouped_warden_category;
 
 use std::collections::VecDeque;
 
-use nalgebra::{DVector, Dyn, Matrix, RowDVector, VecStorage, U1};
-use strum::IntoEnumIterator;
+use nalgebra::{Dyn, Matrix, RowDVector, VecStorage, U1};
 
-use crate::{cost_metric::CostMetric, material::Material, CostVec, NoMaterials, QueueVec, MAX_ORDER};
+use crate::{cost_metric::CostMetric, CostVec, NoMaterials, QueueVec, MAX_ORDER};
 
 pub trait Category {
     fn size(&self) -> u8;
