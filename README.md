@@ -20,7 +20,8 @@ The binary executable will then be `/target/release/fmg.exe`.
 Usage: fmg.exe [OPTIONS]
 
 Options:
-    -o, --output               Output files
+    -o, --output               Enable output files
+    -p, --path <PATH>          Output file path
     -l, --output-batch-long    Show full item names in output
     -h, --help                 Print help
 ```
