@@ -28,23 +28,27 @@ const MAX_ORDER: usize = 4;
 lazy_static! {
     static ref MATERIAL_ORDER: Vec<Material> = Material::iter().collect();
     static ref ARGS: Cli = Cli::parse();
-    static ref OUTPUT_PATH: PathBuf = { 
-        let p = PathBuf::from(ARGS.path.clone());
+    static ref OUTPUT_PATH: PathBuf = {
+        let path_str = ARGS.path.clone().unwrap_or(String::new());
+        let p = PathBuf::from(path_str.clone());
         if !p.exists() {
             let _ = create_dir_all(p);
         }
-        return PathBuf::from(ARGS.path.clone());
+        return PathBuf::from(path_str);
     };
 }
 
 #[derive(Parser, Debug)]
 struct Cli {
+    /// Enable output files
     #[arg(short, long, default_value_t = false)]
     output: bool,
+    /// Output file path
+    #[arg(short, long, requires = "output")]
+    path: Option<String>,
+    /// Show full item names in output
     #[arg(short = 'l', long, default_value_t = false, requires = "output")]
     output_batch_long: bool,
-    #[arg(short, long, default_value_t = String::new(), requires = "output")]
-    path: String,
 }
 
 pub fn find_n_batches_with_metrics<S: ItemSet>(n: usize, metrics: Vec<CostMetric>) where {   
@@ -93,7 +97,7 @@ fn main() {
     let metrics: Vec<CostMetric> = Vec::from([
         // CostMetric::PerfectlyCrateable(TRUCK_SIZE_u16),
         CostMetric::PerfectlyStackable(TRUCK_SIZE_U16)
-        ]);
+    ]);
     let now = Instant::now();
     find_n_batches_with_metrics::<MaterialGroupedWardenItemSet>(2, metrics);
     // find_all_batches_with_metrics::<MaterialGroupedWardenItemSet>(metrics);
