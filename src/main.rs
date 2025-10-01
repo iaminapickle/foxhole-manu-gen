@@ -3,7 +3,7 @@ mod material;
 mod cost_metric;
 mod helper;
 
-use std::{fs::File, io::Write, time::Instant};
+use std::{fs::{create_dir_all, File}, io::Write, path::{Path, PathBuf}, time::Instant};
 
 use crate::{cost_metric::CostMetric, helper::{format_batch_long, format_batch_short, format_cost_vector}, item_set::{material_grouped_warden_item_set::MaterialGroupedWardenItemSet, output_legend_file, warden_item_set::WardenItemSet, ItemSet}, material::Material};
 use clap::Parser;
@@ -27,7 +27,14 @@ const MAX_ORDER: usize = 4;
 
 lazy_static! {
     static ref MATERIAL_ORDER: Vec<Material> = Material::iter().collect();
-    static ref args: Cli = Cli::parse();
+    static ref ARGS: Cli = Cli::parse();
+    static ref OUTPUT_PATH: PathBuf = { 
+        let p = PathBuf::from(ARGS.path.clone());
+        if !p.exists() {
+            let _ = create_dir_all(p);
+        }
+        return PathBuf::from(ARGS.path.clone());
+    };
 }
 
 #[derive(Parser, Debug)]
@@ -36,6 +43,8 @@ struct Cli {
     output: bool,
     #[arg(short = 'l', long, default_value_t = false, requires = "output")]
     output_batch_long: bool,
+    #[arg(short, long, default_value_t = String::new(), requires = "output")]
+    path: String,
 }
 
 pub fn find_n_batches_with_metrics<S: ItemSet>(n: usize, metrics: Vec<CostMetric>) where {   
@@ -47,18 +56,20 @@ pub fn find_n_batches_with_metrics<S: ItemSet>(n: usize, metrics: Vec<CostMetric
         stack.push((vec![q], c));
     }
 
-    let output_suffix = if args.output_batch_long { String::from("long") } else { String::from("short")};
-    let path = format!("{n}_batches_with_{:?}_{}.txt", metrics, output_suffix);
-    let mut output = if args.output { Some(File::create(path).unwrap()) } else { None };
-    if args.output && !args.output_batch_long { output_legend_file::<MaterialGroupedWardenItemSet>(); }
+    let output_suffix = if ARGS.output_batch_long { String::from("long") } else { String::from("short")};
+    let file_str = format!("{n}_batches_with_{:?}_{}.txt", metrics, output_suffix);
+    let output_path = OUTPUT_PATH.join(&file_str);
+
+    let mut output = if ARGS.output { Some(File::create(output_path).unwrap()) } else { None };
+    if !ARGS.output_batch_long { output_legend_file::<MaterialGroupedWardenItemSet>(); }
 
     while !stack.is_empty() {
         let cur: (Batch, CostVec) = stack.pop().unwrap();
         if cur.0.len() == n {
             if metrics.iter().all(|m| m.check_metric(&cur.1)) &&
                let Some(ref mut f) = output {
-                let batch_string = if args.output_batch_long { format_batch_long::<S>(cur.0) } else { format_batch_short::<S>(cur.0) };
-                let _ = write!(f, "Batch: {}\nCost: {}\n", batch_string, format_cost_vector(cur.1));
+                let batch_string = if ARGS.output_batch_long { format_batch_long::<S>(cur.0) } else { format_batch_short::<S>(cur.0) };
+                let _ = write!(f, "B: {}\nC: {}\n", batch_string, format_cost_vector(cur.1));
             }
             continue;
         }
@@ -84,7 +95,7 @@ fn main() {
         CostMetric::PerfectlyStackable(TRUCK_SIZE_U16)
         ]);
     let now = Instant::now();
-    // find_n_batches_with_metrics::<MaterialGroupedWardenItemSet>(2, metrics);
-    find_all_batches_with_metrics::<MaterialGroupedWardenItemSet>(metrics);
+    find_n_batches_with_metrics::<MaterialGroupedWardenItemSet>(2, metrics);
+    // find_all_batches_with_metrics::<MaterialGroupedWardenItemSet>(metrics);
     println!("Elapsed: {:.2?}", now.elapsed());
 }

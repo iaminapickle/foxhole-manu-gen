@@ -5,7 +5,7 @@ use std::{collections::VecDeque, fs::File, fmt::Write as fmtWrite, io::Write as 
 use nalgebra::{Dyn, Matrix, RowDVector, VecStorage, U1};
 use strum::IntoEnumIterator;
 
-use crate::{cost_metric::CostMetric, CostVec, NoMaterials, QueueVec, MAX_ORDER};
+use crate::{cost_metric::CostMetric, CostVec, NoMaterials, QueueVec, MAX_ORDER, OUTPUT_PATH};
 
 pub trait ItemSet: ToString + IntoEnumIterator {
     fn size(&self) -> u8;
@@ -42,8 +42,9 @@ pub trait ItemSet: ToString + IntoEnumIterator {
 }
 
 pub fn output_legend_file<C: ItemSet>() {
-        let path = format!("{}_legend.txt", type_name::<C>().split("::").last().unwrap());
-        let mut file = File::create(path).unwrap();
+        let file_str: String = format!("{}_legend.txt", type_name::<C>().split("::").last().unwrap());
+        let output_path = OUTPUT_PATH.join(&file_str);
+        let mut file = File::create(output_path).unwrap();
         
         let category_order: Vec<C> = C::iter().collect();
         let category_start_val = 'A' as u32;
