@@ -34,7 +34,7 @@ lazy_static! {
 struct Cli {
     #[arg(short, long, default_value_t = false)]
     output: bool,
-    #[arg(long, default_value_t = false)]
+    #[arg(short = 'l', long, default_value_t = false, requires = "output")]
     output_batch_long: bool,
 }
 
@@ -84,7 +84,7 @@ fn main() {
         CostMetric::PerfectlyStackable(TRUCK_SIZE_U16)
         ]);
     let now = Instant::now();
-    find_n_batches_with_metrics::<MaterialGroupedWardenItemSet>(2, metrics);
-    // find_all_batches_with_metrics::<MaterialGroupedWardenCategory>(metrics);
+    // find_n_batches_with_metrics::<MaterialGroupedWardenItemSet>(2, metrics);
+    find_all_batches_with_metrics::<MaterialGroupedWardenItemSet>(metrics);
     println!("Elapsed: {:.2?}", now.elapsed());
 }
