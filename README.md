@@ -10,7 +10,7 @@ foxhole-manu-gen is written in [Rust](https://rust-lang.org/) and will generally
 ```bash
 git clone https://github.com/iaminapickle/foxhole-manu-gen
 cd foxhole-manu-gen
-cargo build -- release
+cargo build --release
 ```
 
 The binary executable will then be `/target/release/fmg.exe`.
@@ -24,4 +24,5 @@ Options:
     -p, --path <PATH>          Output file path
     -l, --output-batch-long    Show full item names in output
     -h, --help                 Print help
+
 ```
