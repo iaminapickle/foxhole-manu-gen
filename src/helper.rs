@@ -4,9 +4,8 @@ use std::fmt::Write;
 pub fn format_cost_vector(cost_vector: CostVec) -> String {
     let mut res: String = String::new();
     for n in &cost_vector {
-        let _ = write!(res, "{}, ", n);
+        let _ = write!(res, "{} ", n);
     }
-    res.pop();
     res.pop();
     return res;
 }
