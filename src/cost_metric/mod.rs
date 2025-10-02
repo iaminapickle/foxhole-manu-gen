@@ -1,6 +1,6 @@
-use std::fmt;
+use std::{collections::HashSet, fmt};
 
-use crate::{CostVec, TRUCK_SIZE_U16, MATERIAL_ORDER};
+use crate::{CostVec, MATERIAL_ORDER, NO_MATERIALS, TRUCK_SIZE_U16};
 use strum_macros::EnumIter;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, EnumIter)]
@@ -14,7 +14,7 @@ pub enum CostMetric {
 }
 
 impl CostMetric {
-    pub fn check_metric(&self, cv: &CostVec) -> bool {
+    pub fn satisfies_metric(&self, cv: &CostVec) -> bool {
         return match self {
             Self::Affordable => { 
                 cv.iter().enumerate().map(|(idx, x)| x.div_ceil(MATERIAL_ORDER[idx].stack_value())).sum::<u16>() <= TRUCK_SIZE_U16

@@ -1,16 +1,16 @@
 use crate::{item_set::ItemSet, Batch, CostVec};
 use std::fmt::Write;
 
-pub fn format_cost_vector(cost_vector: CostVec) -> String {
+pub fn format_cost_vector(cost_vector: &CostVec) -> String {
     let mut res: String = String::new();
-    for n in &cost_vector {
+    for n in cost_vector {
         let _ = write!(res, "{} ", n);
     }
     res.pop();
     return res;
 }
 
-pub fn format_batch_long<S: ItemSet>(batch: Batch) -> String  {
+pub fn format_batch_long<S: ItemSet>(batch: &Batch) -> String  {
     let mut res: String = String::new();
     let category_order: Vec<S> = S::iter().collect();
 
@@ -42,7 +42,7 @@ pub fn format_batch_long<S: ItemSet>(batch: Batch) -> String  {
     return res;
 }
 
-pub fn format_batch_short<S: ItemSet>(batch: Batch) -> String  {
+pub fn format_batch_short<S: ItemSet>(batch: &Batch) -> String  {
     let mut res: String = String::new();
     let category_start_val = 'A' as u32;
 
