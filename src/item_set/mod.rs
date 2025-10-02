@@ -36,7 +36,7 @@ pub trait ItemSet: ToString + IntoEnumIterator {
                         let r = RowDVector::from_row_slice_generic(U1, Dyn(self.size().into()), &v);
                         return (r.clone(), r * self.cost_matrix());
                     })
-                    .filter(|(_, c)| CostMetric::Affordable.check_metric(c))
+                    .filter(|(_, c)| CostMetric::Affordable.satisfies_metric(c))
                     .collect();
     }
 }
