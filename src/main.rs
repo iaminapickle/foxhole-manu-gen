@@ -6,30 +6,31 @@ mod helper;
 use std::{env::current_dir, fs::{create_dir_all, File}, io::Write, path::{PathBuf}, time::Instant};
 
 use crate::{cost_metric::CostMetric, 
-            helper::{format_batch_long, format_batch_short, format_cost_vector},
-            item_set::{material_grouped_warden_item_set::MaterialGroupedWardenItemSet, output_legend_file, warden_item_set::WardenItemSet, ItemSet},
+            helper::{find_all_groups_with_metric, find_all_batches_with_metric, format_batch_long, format_batch_short, format_cost_vector},
+            item_set::{material_grouped_warden_item_set::MaterialGroupedWardenItemSet, output_legend_file, ItemSet},
             material::Material};
 use clap::Parser;
 use nalgebra::{RowDVector, RowSVector, U4, U7};
 use strum::IntoEnumIterator;
 use lazy_static::lazy_static;
 
-// 1 x NO_MATERIALS matrix
-type CostVec = RowSVector<u16, NO_MATERIALS>;
+// 1 x MATERIAL_COUNT matrix
+type CostVec = RowSVector<u16, MATERIAL_COUNT>;
 type QueueVec = RowDVector<u16>;
 type Batch = Vec<QueueVec>;
 
-type NoCategories = U7;
-const NO_CATEGORIES: usize = 7;
+type CategoryCount = U7;
+const CATEGORY_COUNT: usize = 7;
 
-type NoMaterials = U4;
-const NO_MATERIALS: usize = 4;
+type MaterialCount = U4;
+const MATERIAL_COUNT: usize = 4;
 
 const TRUCK_SIZE: usize = 15;
 const TRUCK_SIZE_U16: u16 = 15;
 const MAX_ORDER: usize = 4;
 
 lazy_static! {
+    // [BMat, EMat, HEMat, RMat]
     static ref MATERIAL_ORDER: Vec<Material> = Material::iter().collect();
     static ref ARGS: Cli = Cli::parse();
     static ref OUTPUT_PATH: PathBuf = {
@@ -54,13 +55,19 @@ struct Cli {
     output_batch_long: bool,
 }
 
-pub fn find_n_batches_with_metric<S: ItemSet>(n: usize, metric: CostMetric) where {   
-    let category_order: Vec<S> = S::iter().collect();
-    let base_queues: Vec<Vec<(QueueVec, CostVec)>> = category_order.iter().map(|c|  c.generate_valid_queue_vecs()).collect();
+pub fn find_n_batches_with_metric<S: ItemSet>(n: usize, metric: CostMetric) where {
+    // Crash if n < 1  
+    if n < 1 { panic!("n must be >= 1, was provided {n}"); }
 
-    let mut stack: Vec<(Batch, CostVec)> = Vec::new();
-    for (q, c) in base_queues.first().unwrap().clone() {
-        stack.push((vec![q], c));
+    // [Small Arms, Heavy Arms, Heavy Ammunition, Utility, Medical, Resources, Uniforms]
+    let category_order: Vec<S> = S::iter().collect();
+    // Base valid queues for all categories
+    let base_queues: Vec<Vec<(QueueVec, CostVec, u16)>> = category_order.iter().map(|c|  c.generate_valid_queue_vecs()).collect();
+
+    // Stack for DFS: Vec<(batch, cost, item_count)>
+    let mut stack: Vec<(Batch, CostVec, u16)> = Vec::new();
+    for (queue, cost, item_count) in base_queues.first().unwrap().clone() {
+        stack.push((vec![queue], cost, item_count));
     }
 
     let output_suffix = if ARGS.output_batch_long { String::from("long") } else { String::from("short")};
@@ -68,9 +75,10 @@ pub fn find_n_batches_with_metric<S: ItemSet>(n: usize, metric: CostMetric) wher
     let output_path = OUTPUT_PATH.join(&file_str);
 
     let mut output = if ARGS.output { Some(File::create(output_path).unwrap()) } else { None };
-    if !ARGS.output_batch_long { output_legend_file::<MaterialGroupedWardenItemSet>(); }
+    if ARGS.output && !ARGS.output_batch_long { output_legend_file::<S>(); }
 
-    while let Some((cur_batch, cur_cost)) = stack.pop() {
+    while let Some((cur_batch, cur_cost, cur_item_count)) = stack.pop() {
+        // If batch is length n and satisfied the metric, output to file
         if cur_batch.len() == n {
             if metric.satisfies_metric(&cur_cost) &&
                let Some(ref mut f) = output {
@@ -81,26 +89,82 @@ pub fn find_n_batches_with_metric<S: ItemSet>(n: usize, metric: CostMetric) wher
         }
 
         if let Some(next_queues) = base_queues.get(cur_batch.len()) {
-            for (next_queue, next_cost) in next_queues {
+            // For all base queues in the next category
+            for (next_queue, next_cost, next_item_count) in next_queues {
                 let new_cost = cur_cost + *next_cost;
-                
-                if CostMetric::Affordable.satisfies_metric(&new_cost) {
+                let new_item_count = cur_item_count + next_item_count;
+
+                // If the new batch is affordable and the number of items < TRUCK_SIZE_U16, push to stack
+                if CostMetric::Affordable.satisfies_metric(&new_cost) && new_item_count <= TRUCK_SIZE_U16 {
                     let mut new_batch = cur_batch.clone();
                     new_batch.push(next_queue.clone());
-                    stack.push((new_batch, new_cost));
+                    stack.push((new_batch, new_cost, new_item_count));
                 }
             }
         }
     }
 }
 
-pub fn find_all_batches_with_metric<S: ItemSet>(metric: CostMetric) {
-    find_n_batches_with_metric::<S>(NO_CATEGORIES.try_into().unwrap(), metric);
+pub fn find_n_groups_with_metric<S: ItemSet>(n: usize, metric: CostMetric) {
+    // Crash if n < 1  
+    if n < 1 { panic!("n must be >= 1, was provided {n}"); }
+    
+    // [Small Arms, Heavy Arms, Heavy Ammunition, Utility, Medical, Resources, Uniforms]
+    let category_order: Vec<S> = S::iter().collect();
+    // Base valid queues for all categories
+    let base_queues: Vec<Vec<(QueueVec, CostVec, u16)>> = category_order.iter().map(|c|  c.generate_valid_queue_vecs()).collect();
+
+    // Stack for DFS: Vec<(batch, cost, item_count, non_zero_queue_count)>
+    let mut stack: Vec<(Batch, CostVec, u16, u8)> = Vec::new();
+    for (queue, cost, item_count) in base_queues.first().unwrap().clone() {
+        // Check if non-zero queue
+        let non_zero_queue = if queue.iter().all(|x| *x == 0) { 0 } else { 1 };
+        stack.push((vec![queue], cost, item_count, non_zero_queue));
+    }
+
+    let output_suffix = if ARGS.output_batch_long { String::from("long") } else { String::from("short")};
+    let file_str = format!("{n}_groups_with_{}_{}.txt", metric, output_suffix);
+    let output_path: PathBuf = OUTPUT_PATH.join(&file_str);
+
+    let mut output = if ARGS.output { Some(File::create(output_path).unwrap()) } else { None };
+    if !ARGS.output_batch_long { output_legend_file::<S>(); }
+
+    while let Some((cur_batch, cur_cost, cur_item_count, cur_non_zero_queue_count)) = stack.pop() {
+        // If batch has n non-zero queues and satisfies metric, output to file
+        if usize::from(cur_non_zero_queue_count) == n {
+            if metric.satisfies_metric(&cur_cost) &&
+               let Some(ref mut f) = output {
+                let batch_string = if ARGS.output_batch_long { format_batch_long::<S>(&cur_batch) } else { format_batch_short::<S>(&cur_batch) };
+                let _ = write!(f, "B: {}\nC: {}\n", batch_string, format_cost_vector(&cur_cost));
+            }
+            continue;
+        }
+
+        // For all base queues in the next category
+        if let Some(next_queues) = base_queues.get(cur_batch.len()) {
+            for (next_queue, next_cost, next_item_count) in next_queues {
+                let new_cost = cur_cost + *next_cost;
+                let new_item_count = cur_item_count + *next_item_count;
+
+                let non_zero_queue = if next_queue.iter().all(|x| *x == 0) { 0 } else { 1 };
+                let new_non_zero_queue_count = cur_non_zero_queue_count + non_zero_queue; 
+
+                // If the new batch is affordable and the number of items < TRUCK_SIZE_U16, push to stack
+                if CostMetric::Affordable.satisfies_metric(&new_cost) && new_item_count <= TRUCK_SIZE_U16 {
+                    let mut new_batch = cur_batch.clone();
+                    new_batch.push(next_queue.clone());
+                    stack.push((new_batch, new_cost, new_item_count, new_non_zero_queue_count));
+                }
+            }
+        }
+    }
 }
 
 fn main() {
     let now = Instant::now();
-    find_n_batches_with_metric::<MaterialGroupedWardenItemSet>(2, CostMetric::PerfectlyStackable(TRUCK_SIZE_U16));
+    find_n_batches_with_metric::<MaterialGroupedWardenItemSet>(3, CostMetric::PerfectlyStackable(TRUCK_SIZE_U16));
     // find_all_batches_with_metric::<MaterialGroupedWardenItemSet>(CostMetric::PerfectlyStackable(TRUCK_SIZE_U16));
+    // find_n_groups_with_metric::<MaterialGroupedWardenItemSet>(3, CostMetric::PerfectlyStackable(TRUCK_SIZE_U16));
+    // find_all_groups_with_metric::<MaterialGroupedWardenItemSet>(CostMetric::PerfectlyCrateable(TRUCK_SIZE_U16));
     println!("Elapsed: {:.2?}", now.elapsed());
 }
