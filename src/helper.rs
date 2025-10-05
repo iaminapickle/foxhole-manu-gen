@@ -1,4 +1,4 @@
-use crate::{item_set::ItemSet, Batch, CostVec};
+use crate::{cost_metric::CostMetric, find_n_batches_with_metric, find_n_groups_with_metric, item_set::ItemSet, Batch, CostVec, CATEGORY_COUNT};
 use std::fmt::Write;
 
 pub fn format_cost_vector(cost_vector: &CostVec) -> String {
@@ -58,4 +58,12 @@ pub fn format_batch_short<S: ItemSet>(batch: &Batch) -> String  {
     }
     res.pop();
     return res;
+}
+
+pub fn find_all_batches_with_metric<S: ItemSet>(metric: CostMetric) {
+    find_n_batches_with_metric::<S>(CATEGORY_COUNT.try_into().unwrap(), metric);
+}
+
+pub fn find_all_groups_with_metric<S: ItemSet>(metric: CostMetric) {
+    find_n_groups_with_metric::<S>(CATEGORY_COUNT, metric);
 }

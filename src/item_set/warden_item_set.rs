@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::{NoMaterials, NO_MATERIALS};
+use crate::{MaterialCount, MATERIAL_COUNT};
 use crate::item_set::ItemSet;
 use nalgebra::{Const, Dyn, Matrix, VecStorage};
 use strum_macros::EnumIter;
@@ -144,7 +144,7 @@ impl ItemSet for WardenItemSet {
         };
     }
 
-    fn cost_matrix(&self) -> Matrix<u16, Dyn, NoMaterials, VecStorage<u16, Dyn, NoMaterials>>
+    fn cost_matrix(&self) -> Matrix<u16, Dyn, MaterialCount, VecStorage<u16, Dyn, MaterialCount>>
     {
         let data = match self {
             Self::SmallArms => 
@@ -258,7 +258,7 @@ impl ItemSet for WardenItemSet {
                     150, 0, 0, 0,
                 ],
         };
-        return Matrix::from_row_slice_generic(Dyn(self.size().into()), Const::<NO_MATERIALS>, &data);
+        return Matrix::from_row_slice_generic(Dyn(self.size().into()), Const::<MATERIAL_COUNT>, &data);
     }
 }
 

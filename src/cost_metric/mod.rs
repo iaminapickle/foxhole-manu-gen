@@ -1,6 +1,6 @@
-use std::{collections::HashSet, fmt};
+use std::fmt;
 
-use crate::{CostVec, MATERIAL_ORDER, NO_MATERIALS, TRUCK_SIZE_U16};
+use crate::{CostVec, MATERIAL_ORDER, TRUCK_SIZE_U16};
 use strum_macros::EnumIter;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, EnumIter)]
