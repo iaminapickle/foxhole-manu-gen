@@ -1,3 +1,5 @@
+use nalgebra::DMatrix;
+
 use crate::{cost_metric::CostMetric, find_n_batches_with_metric, find_n_groups_with_metric, item_set::ItemSet, Batch, CostVec, CATEGORY_COUNT};
 use std::fmt::Write;
 

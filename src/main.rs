@@ -62,7 +62,10 @@ pub fn find_n_batches_with_metric<S: ItemSet>(n: usize, metric: CostMetric) wher
     // [Small Arms, Heavy Arms, Heavy Ammunition, Utility, Medical, Resources, Uniforms]
     let category_order: Vec<S> = S::iter().collect();
     // Base valid queues for all categories
-    let base_queues: Vec<Vec<(QueueVec, CostVec, u16)>> = category_order.iter().map(|c|  c.generate_valid_queue_vecs()).collect();
+    let base_queues: Vec<Vec<(QueueVec, CostVec, u16)>> = category_order.iter().map(|c|  { let mut res = c.generate_valid_queue_vec();
+                                                                                               res.reverse();
+                                                                                               return res;
+                                                                                             }).collect();
 
     // Stack for DFS: Vec<(batch, cost, item_count)>
     let mut stack: Vec<(Batch, CostVec, u16)> = Vec::new();
@@ -112,7 +115,10 @@ pub fn find_n_groups_with_metric<S: ItemSet>(n: usize, metric: CostMetric) {
     // [Small Arms, Heavy Arms, Heavy Ammunition, Utility, Medical, Resources, Uniforms]
     let category_order: Vec<S> = S::iter().collect();
     // Base valid queues for all categories
-    let base_queues: Vec<Vec<(QueueVec, CostVec, u16)>> = category_order.iter().map(|c|  c.generate_valid_queue_vecs()).collect();
+    let base_queues: Vec<Vec<(QueueVec, CostVec, u16)>> = category_order.iter().map(|c|  { let mut res = c.generate_valid_queue_vec();
+                                                                                               res.reverse();
+                                                                                               return res;
+                                                                                             }).collect();
 
     // Stack for DFS: Vec<(batch, cost, item_count, non_zero_queue_count)>
     let mut stack: Vec<(Batch, CostVec, u16, u8)> = Vec::new();
@@ -162,9 +168,10 @@ pub fn find_n_groups_with_metric<S: ItemSet>(n: usize, metric: CostMetric) {
 
 fn main() {
     let now = Instant::now();
-    find_n_batches_with_metric::<MaterialGroupedWardenItemSet>(3, CostMetric::PerfectlyStackable(TRUCK_SIZE_U16));
+    // find_n_batches_with_metric::<MaterialGroupedWardenItemSet>(2, CostMetric::PerfectlyStackable(TRUCK_SIZE_U16));
     // find_all_batches_with_metric::<MaterialGroupedWardenItemSet>(CostMetric::PerfectlyStackable(TRUCK_SIZE_U16));
     // find_n_groups_with_metric::<MaterialGroupedWardenItemSet>(3, CostMetric::PerfectlyStackable(TRUCK_SIZE_U16));
     // find_all_groups_with_metric::<MaterialGroupedWardenItemSet>(CostMetric::PerfectlyCrateable(TRUCK_SIZE_U16));
+    // MaterialGroupedWardenItemSet::HeavyAmmunition.output_valid_queue_vec();
     println!("Elapsed: {:.2?}", now.elapsed());
 }
