@@ -15,7 +15,8 @@ pub trait ItemSet: ToString + IntoEnumIterator {
     // Returns a self.size() x MATERIAL_COUNT matrix 
     fn cost_matrix(&self) -> Matrix<u16, Dyn, MaterialCount, VecStorage<u16, Dyn, MaterialCount>>;
     // Generates all valid queues for this category
-    fn generate_valid_queue_vecs(&self) -> Vec<(QueueVec, CostVec, u16)> {
+    // Returns Vec<(queue, cost, item_count)>
+    fn generate_valid_queue_vec(&self) -> Vec<(QueueVec, CostVec, u16)> {
         let mut queue = VecDeque::new();
         queue.push_back(vec![]);
         
@@ -42,6 +43,31 @@ pub trait ItemSet: ToString + IntoEnumIterator {
                     })
                     .filter(|(_, c, s)| CostMetric::Affordable.satisfies_metric(c) && *s <= TRUCK_SIZE_U16)
                     .collect();
+    }
+
+    // Debug function that outputs all valid queues of a category to a file
+    fn output_valid_queue_vec(&self) {
+        let item_set_name = type_name::<Self>().split("::").last().unwrap();
+        let file_str: String = format!("{}_{}_valid_queue_vec.txt", item_set_name, self.to_string());
+        let output_path = OUTPUT_PATH.join(&file_str);
+        let mut file = File::create(output_path).unwrap();
+
+        let valid_queues_vec = self.generate_valid_queue_vec();
+        let _ = write!(file, "There are {} valid queues\n", valid_queues_vec.len());
+        for (queue, cost, _) in valid_queues_vec {
+            let mut queue_string = String::from("Q: [");
+            for n in &queue {
+                let _ = write!(queue_string, "{n} ");
+            }
+            queue_string.pop();
+            let _ = write!(queue_string, "]\nC: [");
+            for n in &cost {
+                let _ = write!(queue_string, "{n} ");
+            }
+            queue_string.pop();
+            let _ = write!(queue_string, "]\n");
+            let _ = write!(file, "{}", queue_string);
+        }
     }
 }
 
