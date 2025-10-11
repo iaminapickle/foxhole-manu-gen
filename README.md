@@ -24,5 +24,4 @@ Options:
     -p, --path <PATH>          Output file path
     -l, --output-batch-long    Show full item names in output
     -h, --help                 Print help
-
 ```
