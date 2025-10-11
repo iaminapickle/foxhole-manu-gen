@@ -3,6 +3,11 @@ use std::fmt;
 use crate::{CostVec, MATERIAL_ORDER, TRUCK_SIZE_U16};
 use strum_macros::EnumIter;
 
+
+pub fn count_stacks(cv: &CostVec) -> u16 {
+    return cv.iter().enumerate().map(|(idx, x)| x.div_ceil(MATERIAL_ORDER[idx].stack_value())).sum::<u16>();
+}
+
 #[derive(Debug, PartialEq, Eq, Hash, Clone, EnumIter)]
 pub enum CostMetric {
     Affordable,
@@ -17,10 +22,10 @@ impl CostMetric {
     pub fn satisfies_metric(&self, cv: &CostVec) -> bool {
         return match self {
             Self::Affordable => { 
-                cv.iter().enumerate().map(|(idx, x)| x.div_ceil(MATERIAL_ORDER[idx].stack_value())).sum::<u16>() <= TRUCK_SIZE_U16
+                count_stacks(cv) <= TRUCK_SIZE_U16
             },
             Self::NValid(n) => {
-                cv.iter().enumerate().map(|(idx, x)| x.div_ceil(MATERIAL_ORDER[idx].stack_value())).sum::<u16>() == *n
+                count_stacks(cv) == *n
             }, 
             Self::Stackable => {
                 cv.iter().enumerate().all(|(idx, x)| x % MATERIAL_ORDER[idx].stack_value() == 0)

@@ -62,6 +62,19 @@ pub fn format_batch_short<S: ItemSet>(batch: &Batch) -> String  {
     return res;
 }
 
+pub fn format_batch_groups<S: ItemSet>(batch: &Batch) -> String {
+    let mut res: String = String::new();
+    for i in 0..CATEGORY_COUNT {
+        if i < batch.len() && batch[i].iter().any(|x| *x != 0) {
+            let _ = write!(res, "1 ");
+        } else {
+            let _ = write!(res, "0 ");
+        }
+    }
+    res.pop();
+    return res;
+}
+
 pub fn find_all_batches_with_metric<S: ItemSet>(metric: CostMetric) {
     find_n_batches_with_metric::<S>(CATEGORY_COUNT.try_into().unwrap(), metric);
 }
