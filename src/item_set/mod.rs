@@ -1,5 +1,6 @@
 pub mod warden_item_set;
 pub mod material_grouped_warden_item_set;
+pub mod tests;
 
 use std::{collections::VecDeque, fs::File, fmt::Write as fmtWrite, io::Write as ioWrite, any::type_name};
 use nalgebra::{Dyn, Matrix, RowDVector, VecStorage, U1};

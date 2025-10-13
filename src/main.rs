@@ -6,7 +6,7 @@ mod helper;
 use std::{env::current_dir, fs::{create_dir_all, File}, io::Write, path::{PathBuf}, time::Instant};
 
 use crate::{cost_metric::{count_stacks, CostMetric}, 
-            helper::{find_all_batches_with_metric, find_all_groups_with_metric, format_batch_groups, format_batch_long, format_batch_short, format_cost_vector},
+            helper::{find_all_batches_with_metric, find_all_groups_with_metric, find_all_prime_groups_with_metric, format_batch_groups, format_batch_long, format_batch_short, format_cost_vector},
             item_set::{material_grouped_warden_item_set::MaterialGroupedWardenItemSet, output_legend_file, ItemSet},
             material::Material};
 use clap::Parser;
@@ -249,7 +249,8 @@ fn main() {
     // find_all_batches_with_metric::<MaterialGroupedWardenItemSet>(CostMetric::PerfectlyStackable(TRUCK_SIZE_U16));
     // find_n_groups_with_metric::<MaterialGroupedWardenItemSet>(2, CostMetric::PerfectlyStackable(TRUCK_SIZE_U16));
     // find_all_groups_with_metric::<MaterialGroupedWardenItemSet>(CostMetric::PerfectlyCrateable(TRUCK_SIZE_U16));
-    find_prime_n_groups_with_metric::<MaterialGroupedWardenItemSet>(2, CostMetric::Stackable);
+    // find_prime_n_groups_with_metric::<MaterialGroupedWardenItemSet>(2, CostMetric::Stackable);
+    find_all_prime_groups_with_metric::<MaterialGroupedWardenItemSet>(CostMetric::Stackable);
     // MaterialGroupedWardenItemSet::HeavyAmmunition.output_valid_queue_vec();
     println!("Elapsed: {:.2?}", now.elapsed());
 }
