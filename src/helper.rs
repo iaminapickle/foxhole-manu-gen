@@ -1,6 +1,6 @@
 use nalgebra::DMatrix;
 
-use crate::{cost_metric::CostMetric, find_n_batches_with_metric, find_n_groups_with_metric, item_set::ItemSet, Batch, CostVec, CATEGORY_COUNT};
+use crate::{cost_metric::CostMetric, find_n_batches_with_metric, find_n_groups_with_metric, find_prime_n_groups_with_metric, item_set::ItemSet, Batch, CostVec, CATEGORY_COUNT};
 use std::fmt::Write;
 
 pub fn format_cost_vector(cost_vector: &CostVec) -> String {
@@ -81,4 +81,8 @@ pub fn find_all_batches_with_metric<S: ItemSet>(metric: CostMetric) {
 
 pub fn find_all_groups_with_metric<S: ItemSet>(metric: CostMetric) {
     find_n_groups_with_metric::<S>(CATEGORY_COUNT, metric);
+}
+
+pub fn find_all_prime_groups_with_metric<S: ItemSet>(metric: CostMetric) {
+    find_prime_n_groups_with_metric::<S>(CATEGORY_COUNT, metric);
 }
