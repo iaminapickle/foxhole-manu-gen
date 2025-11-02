@@ -1,13 +1,12 @@
 pub mod warden_categories;
 pub mod material_grouped_warden_categories;
-pub mod tests;
 
 use std::{any::type_name, collections::VecDeque, fmt::Write as fmtWrite, fs::File, io::{BufWriter, Write as ioWrite}};
 use clap::ValueEnum;
 use ndarray::{Array, Array2};
 use strum::IntoEnumIterator;
 
-use crate::{cost_metric::CostMetric, item_set::{material_grouped_warden_categories::MaterialGroupedWardenCategories, warden_categories::WardenCategories}, CostVec, QueueVec, ITEM_SET_CATEGORY_ORDER, ITEM_SET_NAME, JSON_OPTIONS, MAX_ORDER, MAX_ORDER_U16, OUTPUT_PATH, TRUCK_SIZE_U16};
+use crate::{cost_metric::CostMetric, model::item_set::{material_grouped_warden_categories::MaterialGroupedWardenCategories, warden_categories::WardenCategories}, CostVec, OrderNum, QueueVec, ITEM_SET_CATEGORY_ORDER, ITEM_SET_NAME, JSON_OPTIONS, MAX_ORDER, MAX_ORDER_U16, OUTPUT_PATH, TRUCK_SIZE_U16};
 
 const DEFAULT_ORDER_RANGE: std::ops::RangeInclusive<u16> = 0..=MAX_ORDER_U16;
 
@@ -57,7 +56,9 @@ pub trait ItemSetCategory: ToString + Sync {
     fn item_order(&self) -> Vec<Vec<String>>;
     // Returns a self.size() x MATERIAL_COUNT matrix
     // Retruns a largest_category_size() x MATERIAL_COUNT matrix
-    fn cost_matrix(&self) -> Array2<u16>;
+    // fn cost_matrix(&self) -> Array2<u16>;
+    fn cost_matrix(&self) -> Vec<OrderNum>;
+    fn cost_matrix_ndarray(&self) -> Array2<OrderNum>;
     fn category_num(&self) -> usize {
         // Convert both to strings for comparison since we can't directly compare trait objects
         let self_str = self.to_string();
@@ -68,18 +69,6 @@ pub trait ItemSetCategory: ToString + Sync {
     // Generates all valid queues for this category
     // Returns Vec<(queue, cost, item_count)>
     fn generate_valid_queue_vec(&self) -> Vec<(QueueVec, CostVec, u16)> {
-        // If there is a chosen queue for this category, return it
-        // if JSON_OPTIONS.chosen_queues.is_some() {
-        //     for (c, q) in JSON_OPTIONS.chosen_queues.as_ref().unwrap() {
-        //         if *c == self.category_num() {
-        //             let r = RowDVector::from_row_slice_generic(U1, Dyn(self.size().into()), &q);
-        //             return vec![
-        //                 (r.clone(), r * self.cost_matrix(), q.iter().sum::<u16>()), 
-        //             ]
-        //         }
-        //     }
-        // }
-
         let mut queue = VecDeque::new();
         queue.push_back(vec![]);
 
@@ -110,7 +99,7 @@ pub trait ItemSetCategory: ToString + Sync {
         return queue.iter()
                     .map(|v| {
                         let r: Array2<u16> = Array::from_shape_vec((1, v.len()), v.clone()).unwrap();
-                        let c =  r.clone().dot(&self.cost_matrix());
+                        let c =  r.clone().dot(&self.cost_matrix_ndarray());
                         return (r, c, v.iter().sum::<u16>());
                     })
                     .filter(|(_, c, s)| CostMetric::Affordable.satisfies_metric(c) && *s <= TRUCK_SIZE_U16)

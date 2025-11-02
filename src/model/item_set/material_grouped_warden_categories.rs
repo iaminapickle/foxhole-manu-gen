@@ -1,12 +1,12 @@
 use std::fmt;
 
-use crate::{MaterialCount, MATERIAL_COUNT};
-use crate::item_set::ItemSet;
-use nalgebra::{Const, Dyn, Matrix, VecStorage};
+use crate::{OrderNum, MATERIAL_COUNT};
+use crate::model::item_set::ItemSetCategory;
+use ndarray::{Array, Array2};
 use strum_macros::EnumIter;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, EnumIter)]
-pub enum MaterialGroupedWardenItemSet {
+pub enum MaterialGroupedWardenCategories {
     SmallArms,
     HeavyArms,
     HeavyAmmunition,
@@ -16,7 +16,7 @@ pub enum MaterialGroupedWardenItemSet {
     Uniforms
 }
 
-impl ItemSet for MaterialGroupedWardenItemSet {
+impl ItemSetCategory for MaterialGroupedWardenCategories {
     fn size(&self) -> u8 {
         return match self {
             Self::SmallArms => 13,
@@ -144,9 +144,9 @@ impl ItemSet for MaterialGroupedWardenItemSet {
         };
     }
 
-    fn cost_matrix(&self) -> Matrix<u16, Dyn, MaterialCount, VecStorage<u16, Dyn, MaterialCount>>
+    fn cost_matrix(&self) -> Vec<OrderNum>
     {
-        let data = match self {
+        return match self {
             Self::SmallArms => 
                 vec![
                     250, 0,  0, 25,
@@ -224,11 +224,14 @@ impl ItemSet for MaterialGroupedWardenItemSet {
                     150, 0, 0, 0,
                 ],
         };
-        return Matrix::from_row_slice_generic(Dyn(self.size().into()), Const::<MATERIAL_COUNT>, &data);
+    }
+
+    fn cost_matrix_ndarray(&self) -> Array2<OrderNum> {
+        return Array::from_shape_vec((usize::from(self.size()), MATERIAL_COUNT), self.cost_matrix()).unwrap();
     }
 }
 
-impl fmt::Display for MaterialGroupedWardenItemSet {
+impl fmt::Display for MaterialGroupedWardenCategories {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
