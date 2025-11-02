@@ -1,12 +1,12 @@
 use std::fmt;
 
-use crate::{MaterialCount, MATERIAL_COUNT};
-use crate::item_set::ItemSet;
-use nalgebra::{Const, Dyn, Matrix, VecStorage};
+use crate::{MATERIAL_COUNT};
+use crate::item_set::ItemSetCategory;
+use ndarray::{Array, Array2};
 use strum_macros::EnumIter;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, EnumIter)]
-pub enum WardenItemSet{
+pub enum WardenCategories{
     SmallArms,
     HeavyArms,
     HeavyAmmunition,
@@ -16,7 +16,7 @@ pub enum WardenItemSet{
     Uniforms
 }
 
-impl ItemSet for WardenItemSet {
+impl ItemSetCategory for WardenCategories {
     fn size(&self) -> u8 {
         return match self {
             Self::SmallArms => 25,
@@ -143,8 +143,8 @@ impl ItemSet for WardenItemSet {
                 ],
         };
     }
-
-    fn cost_matrix(&self) -> Matrix<u16, Dyn, MaterialCount, VecStorage<u16, Dyn, MaterialCount>>
+    
+    fn cost_matrix(&self) -> Array2<u16>
     {
         let data = match self {
             Self::SmallArms => 
@@ -258,11 +258,11 @@ impl ItemSet for WardenItemSet {
                     150, 0, 0, 0,
                 ],
         };
-        return Matrix::from_row_slice_generic(Dyn(self.size().into()), Const::<MATERIAL_COUNT>, &data);
+        return Array::from_shape_vec((usize::from(self.size()), MATERIAL_COUNT), data).unwrap();
     }
 }
 
-impl fmt::Display for WardenItemSet {
+impl fmt::Display for WardenCategories {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
