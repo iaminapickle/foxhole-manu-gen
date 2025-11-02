@@ -64,13 +64,13 @@ impl OptionChoice {
             OptionChoice::Queue((c, items)) => {
                 let category_size = ITEM_SET_CATEGORY_ORDER[*c].size();
 
-                if *c < 0 || *c >= CATEGORY_COUNT { panic!("JSON Options: [Queue] category must be between [0 - {CATEGORY_COUNT})."); }
+                if *c >= CATEGORY_COUNT { panic!("JSON Options: [Queue] category must be between [0 - {CATEGORY_COUNT})."); }
                 if items.len() != usize::from(category_size) { panic!("JSON Options: [Queue] queue size must be {category_size}.")}
                 if items.iter().sum::<u16>() > MAX_ORDER_U16 {
                     panic!("JSON Options: [Queue] orders must sum <= {MAX_ORDER}");
                 }
                 for item in items {
-                    if *item < 0 || *item > MAX_ORDER_U16 {
+                    if *item > MAX_ORDER_U16 {
                         panic!("JSON Options: [Queue] order must be between [0 - {MAX_ORDER}).");
                     }
                 }
