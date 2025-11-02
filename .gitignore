@@ -1,4 +1,6 @@
-*/
-!/src
-!/tests
+/target
+/tests
+/complete
 *.txt
+*.svg
+*.data
