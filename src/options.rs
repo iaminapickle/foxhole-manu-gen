@@ -45,17 +45,17 @@ impl OptionChoice {
     fn check_valid(&self) -> bool {
         match self {
             OptionChoice::Category(c) => {
-                if *c < 0 || *c >= CATEGORY_COUNT { panic!("JSON Options: [Category] must be between [0 - {CATEGORY_COUNT})."); }
+                if *c >= CATEGORY_COUNT { panic!("JSON Options: [Category] must be between [0 - {CATEGORY_COUNT})."); }
             }
             OptionChoice::ItemOrders((c, items)) => {
-                if *c < 0 || *c >= CATEGORY_COUNT { panic!("JSON Options: [ItemsOrders] category must be between [0 - {CATEGORY_COUNT})."); }
+                if *c >= CATEGORY_COUNT { panic!("JSON Options: [ItemsOrders] category must be between [0 - {CATEGORY_COUNT})."); }
                 for (item, range) in items {
-                    if *item < 0 || *item >= usize::from(ITEM_SET_CATEGORY_ORDER[*c].size()) {
+                    if *item >= usize::from(ITEM_SET_CATEGORY_ORDER[*c].size()) {
                         panic!("JSON Options: [ItemsOrders] item must be between [0 - {}) for category {}.", ITEM_SET_CATEGORY_ORDER[*c].size(), *c);
                     }
 
                     for r in range {
-                        if *r < 0 || *r > MAX_ORDER_U16 {
+                        if *r > MAX_ORDER_U16 {
                             panic!("Json Options: [ItemsOrders] item range must be between [0 - {MAX_ORDER}].")
                         }
                     }
