@@ -229,10 +229,8 @@ impl ItemSetCategory for MaterialGroupedWardenCategories {
     fn cost_matrix_ndarray(&self) -> Array2<OrderNum> {
         return Array::from_shape_vec((usize::from(self.size()), MATERIAL_COUNT), self.cost_matrix()).unwrap();
     }
-}
 
-impl fmt::Display for MaterialGroupedWardenCategories {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+    fn to_string(&self) -> String {
+        return String::from("MaterialGroupedWarden");
     }
 }

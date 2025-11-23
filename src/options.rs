@@ -3,7 +3,7 @@ use std::{collections::HashSet, fs::File, io::BufReader, path::PathBuf};
 use clap::Parser;
 use serde::Deserialize;
 
-use crate::{model::item_set::ItemSetOption, OrderNum, CATEGORY_COUNT, ITEM_SET_CATEGORY_ORDER, MAX_ORDER, MAX_ORDER_U16};
+use crate::{CATEGORY_COUNT, ITEM_SET_CATEGORY_ORDER, MAX_ORDER, MAX_ORDER_U16, OrderNum, model::item_set::{ItemSetCategory, ItemSetOption}};
 
 #[derive(Parser, Debug)]
 pub struct Cli {

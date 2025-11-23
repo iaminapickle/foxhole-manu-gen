@@ -1,5 +1,14 @@
-use crate::{model::item_set::ItemSetCategory, Batch, CostVec, CATEGORY_COUNT, ITEM_SET_CATEGORY_ORDER};
+use ndarray::{Array, Array2};
+
+use crate::{Batch, CATEGORY_COUNT, CostVec, ITEM_SET_CATEGORY_ORDER, MATERIAL_COUNT, model::item_set::ItemSetCategory};
 use std::fmt::Write;
+
+pub fn batch_cost(batch: &Batch) -> CostVec {
+    return batch.iter()
+                .enumerate()
+                .map(|(idx, r)| r.clone().dot(&ITEM_SET_CATEGORY_ORDER[idx].cost_matrix_ndarray()))
+                .fold(Array2::zeros((1, MATERIAL_COUNT)), |sum, i| sum + i);
+}
 
 pub fn format_cost_vector(cost_vector: &CostVec) -> String {
     let mut res: String = String::new();

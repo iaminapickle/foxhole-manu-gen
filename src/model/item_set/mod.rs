@@ -4,9 +4,8 @@ pub mod material_grouped_warden_categories;
 use std::{any::type_name, collections::VecDeque, fmt::Write as fmtWrite, fs::File, io::{BufWriter, Write as ioWrite}};
 use clap::ValueEnum;
 use ndarray::{Array, Array2};
-use strum::IntoEnumIterator;
 
-use crate::{cost_metric::CostMetric, model::item_set::{material_grouped_warden_categories::MaterialGroupedWardenCategories, warden_categories::WardenCategories}, CostVec, OrderNum, QueueVec, ITEM_SET_CATEGORY_ORDER, ITEM_SET_NAME, JSON_OPTIONS, MAX_ORDER, MAX_ORDER_U16, OUTPUT_PATH, TRUCK_SIZE_U16};
+use crate::{CostVec, ITEM_SET_CATEGORY_ORDER, ITEM_SET_NAME, JSON_OPTIONS, MAX_ORDER_U16, OUTPUT_PATH, OrderNum, QueueVec, TRUCK_SIZE_U16, WeightNum, cost_metric::CostMetric, model::item_set::{material_grouped_warden_categories::MaterialGroupedWardenCategories, warden_categories::WardenCategories}};
 
 const DEFAULT_ORDER_RANGE: std::ops::RangeInclusive<u16> = 0..=MAX_ORDER_U16;
 
@@ -25,31 +24,74 @@ impl ItemSetOption {
                                              .max().unwrap();
     }
 
-    pub fn item_set_category_order(&self) -> Vec<Box<dyn ItemSetCategory>> {
+    pub fn item_set_category_order(&self) -> Vec<ItemSetCategoryWrapper> {
         return match self {
             ItemSetOption::Warden => vec![
-                Box::new(WardenCategories::SmallArms),
-                Box::new(WardenCategories::HeavyArms),
-                Box::new(WardenCategories::HeavyAmmunition),
-                Box::new(WardenCategories::Utility),
-                Box::new(WardenCategories::Medical),
-                Box::new(WardenCategories::Resources),
-                Box::new(WardenCategories::Uniforms),
+                ItemSetCategoryWrapper::Warden(WardenCategories::SmallArms),
+                ItemSetCategoryWrapper::Warden(WardenCategories::HeavyArms),
+                ItemSetCategoryWrapper::Warden(WardenCategories::HeavyAmmunition),
+                ItemSetCategoryWrapper::Warden(WardenCategories::Utility),
+                ItemSetCategoryWrapper::Warden(WardenCategories::Medical),
+                ItemSetCategoryWrapper::Warden(WardenCategories::Resources),
+                ItemSetCategoryWrapper::Warden(WardenCategories::Uniforms),
             ],
             ItemSetOption::MaterialGroupedWarden => vec![
-                Box::new(MaterialGroupedWardenCategories::SmallArms),
-                Box::new(MaterialGroupedWardenCategories::HeavyArms),
-                Box::new(MaterialGroupedWardenCategories::HeavyAmmunition),
-                Box::new(MaterialGroupedWardenCategories::Utility),
-                Box::new(MaterialGroupedWardenCategories::Medical),
-                Box::new(MaterialGroupedWardenCategories::Resources),
-                Box::new(MaterialGroupedWardenCategories::Uniforms),
+                ItemSetCategoryWrapper::MaterialGroupedWarden(MaterialGroupedWardenCategories::SmallArms),
+                ItemSetCategoryWrapper::MaterialGroupedWarden(MaterialGroupedWardenCategories::HeavyArms),
+                ItemSetCategoryWrapper::MaterialGroupedWarden(MaterialGroupedWardenCategories::HeavyAmmunition),
+                ItemSetCategoryWrapper::MaterialGroupedWarden(MaterialGroupedWardenCategories::Utility),
+                ItemSetCategoryWrapper::MaterialGroupedWarden(MaterialGroupedWardenCategories::Medical),
+                ItemSetCategoryWrapper::MaterialGroupedWarden(MaterialGroupedWardenCategories::Resources),
+                ItemSetCategoryWrapper::MaterialGroupedWarden(MaterialGroupedWardenCategories::Uniforms),
             ],
         };
     }
 }
 
-pub trait ItemSetCategory: ToString + Sync {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ItemSetCategoryWrapper {
+    Warden(WardenCategories),
+    MaterialGroupedWarden(MaterialGroupedWardenCategories),
+}
+
+impl ItemSetCategory for ItemSetCategoryWrapper {
+    fn size(&self) -> u8 {
+        match self {
+            ItemSetCategoryWrapper::Warden(c) => c.size(),
+            ItemSetCategoryWrapper::MaterialGroupedWarden(c) => c.size(),
+        }
+    }
+
+    fn item_order(&self) -> Vec<Vec<String>> {
+        match self {
+            ItemSetCategoryWrapper::Warden(c) => c.item_order(),
+            ItemSetCategoryWrapper::MaterialGroupedWarden(c) => c.item_order(),
+        }
+    }
+
+    fn cost_matrix(&self) -> Vec<OrderNum> {
+        match self {
+            ItemSetCategoryWrapper::Warden(c) => c.cost_matrix(),
+            ItemSetCategoryWrapper::MaterialGroupedWarden(c) => c.cost_matrix(),
+        }
+    }
+
+    fn cost_matrix_ndarray(&self) -> Array2<OrderNum> {
+        match self {
+            ItemSetCategoryWrapper::Warden(c) => c.cost_matrix_ndarray(),
+            ItemSetCategoryWrapper::MaterialGroupedWarden(c) => c.cost_matrix_ndarray(),
+        }
+    }
+
+    fn to_string(&self) -> String {
+        match self {
+            ItemSetCategoryWrapper::Warden(c) => c.to_string(),
+            ItemSetCategoryWrapper::MaterialGroupedWarden(c) => c.to_string(),
+        }
+    }
+}
+
+pub trait ItemSetCategory: Sync {
     // Returns the number of items in a category
     fn size(&self) -> u8;
     // Returns the names of items
@@ -59,6 +101,7 @@ pub trait ItemSetCategory: ToString + Sync {
     // fn cost_matrix(&self) -> Array2<u16>;
     fn cost_matrix(&self) -> Vec<OrderNum>;
     fn cost_matrix_ndarray(&self) -> Array2<OrderNum>;
+    fn to_string(&self) -> String;
     fn category_num(&self) -> usize {
         // Convert both to strings for comparison since we can't directly compare trait objects
         let self_str = self.to_string();

@@ -6,7 +6,7 @@ mod algo;
 
 use std::{env::current_dir, fs::create_dir_all, path::PathBuf, time::Instant};
 
-use crate::{algo::{n_batches::find_n_batches_with_metric, n_prime_groups::find_all_prime_groups_with_metric}, cost_metric::CostMetric, model::item_set::{ItemSetCategory, ItemSetOption}, model::material::Material, options::{Cli, JsonOptions}};
+use crate::{algo::{good_lp::solve_batch, n_batches::find_n_batches_with_metric, n_prime_groups::find_all_prime_groups_with_metric}, cost_metric::CostMetric, helper::{batch_cost, format_batch_short, format_cost_vector}, model::{item_set::{ItemSetCategory, ItemSetCategoryWrapper, ItemSetOption}, material::Material}, options::{Cli, JsonOptions}};
 use clap::Parser;
 use ndarray::Array2;
 use strum::IntoEnumIterator;
@@ -14,20 +14,24 @@ use lazy_static::lazy_static;
 
 type CostNum = u16;
 type OrderNum = u16;
-
+type WeightNum = f32;
+type Weights = Vec<WeightVec>;
 // 1 x MATERIAL_COUNT row vector
 type CostVec = Array2<CostNum>;
 // 1 x category.size() row vector
-type QueueVec = Array2<OrderNum>;
-// CATEGORY_COUNT x 
+type QueueVec = Array2<OrderNum>; 
+// 1 x category.size() row vector
+type WeightVec = Array2<OrderNum>; 
 type Batch = Vec<QueueVec>;
 
 const CATEGORY_COUNT: usize = 7;
 const MATERIAL_COUNT: usize = 4;
 
 const TRUCK_SIZE: usize = 15;
+const TRUCK_SIZE_I32: i32 = 15;
 const TRUCK_SIZE_U16: u16 = 15;
 const MAX_ORDER: usize = 4;
+const MAX_ORDER_I32: i32 = 4;
 const MAX_ORDER_U16: u16 = 4;
 
 lazy_static! {
@@ -57,7 +61,7 @@ lazy_static! {
         };
     };
 
-    pub static ref ITEM_SET_CATEGORY_ORDER: Vec<Box<dyn ItemSetCategory>> = ARGS.item_set.item_set_category_order();
+    pub static ref ITEM_SET_CATEGORY_ORDER: Vec<ItemSetCategoryWrapper> = ARGS.item_set.item_set_category_order();
 }
 
 fn main() {
@@ -66,7 +70,9 @@ fn main() {
     // find_n_groups_with_metric::<MaterialGroupedWardenItemSet>(2, CostMetric::PerfectlyStackable(TRUCK_SIZE_U16));
     // find_all_groups_with_metric::<MaterialGroupedWardenItemSet>(CostMetric::PerfectlyCrateable(TRUCK_SIZE_U16));
     // find_prime_n_groups_with_metric::<MaterialGroupedWardenItemSet>(2, CostMetric::Stackable);
-    find_n_batches_with_metric(2, CostMetric::PerfectlyStackable(TRUCK_SIZE_U16));
+    // find_n_batches_with_metric(2, CostMetric::PerfectlyStackable(TRUCK_SIZE_U16));
+    let res = solve_batch().unwrap();
+    let _ = println!("Batch: {}\nCost : {}", format_batch_short(&res), format_cost_vector(&batch_cost(&res)));
     // find_all_prime_groups_with_metric(CostMetric::Stackable);
     println!("Elapsed: {:.2?}", now.elapsed());
 }
